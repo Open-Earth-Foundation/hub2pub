@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/Open-Earth-Foundation/hub2pub#readme",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0"
   }
 }
