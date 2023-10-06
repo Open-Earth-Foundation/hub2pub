@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/Open-Earth-Foundation/hub2pub/issues"
   },
-  "homepage": "https://github.com/Open-Earth-Foundation/hub2pub#readme"
+  "homepage": "https://github.com/Open-Earth-Foundation/hub2pub#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
