@@ -14,50 +14,66 @@ const app = express()
 // Root object
 
 app.get('/', wrap((req, res) => {
-    res.status(200)
-    res.json({
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        id: `${ORIGIN}/`,
-        type: 'Service',
-        name: NAME
-    })
+  res.status(200)
+  res.json({
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: `${ORIGIN}/`,
+    type: 'Service',
+    name: NAME
+  })
 }))
 
 // Root object
 
 app.get('/.well-known/webfinger', wrap((req, res) => {
-    const resource = req.query.resource
-    if (!resource) {
-        res.status(400)
-        res.json({
-            error: 'invalid_request',
-            error_description: 'The "resource" parameter is required'
-        })
-        return
-    }
-    const acct = resource.replace(/^acct:/, '')
-    const [username, domain] = acct.split('@')
-    if (domain !== (new URL(ORIGIN)).host) {
-        res.status(404)
-        res.json({
-            error: 'invalid_request',
-            error_description: 'The "resource" parameter must be a local user'
-        })
-        return
-    }
-    // TODO: check domain
-    res.status(200)
-    res.contentType('application/jrd+json')
+  const resource = req.query.resource
+  if (!resource) {
+    res.status(400)
     res.json({
-        "links" : [
-            {
-               "href" : `${ORIGIN}/user/${username}`,
-               "rel" : "self",
-               "type" : "application/activity+json"
-            }
-         ],
-         "subject" : resource
+      error: 'invalid_request',
+      error_description: 'The "resource" parameter is required'
     })
+    return
+  }
+  const acct = resource.replace(/^acct:/, '')
+  const [username, domain] = acct.split('@')
+  if (domain !== (new URL(ORIGIN)).host) {
+    res.status(404)
+    res.json({
+      error: 'invalid_request',
+      error_description: 'The "resource" parameter must be a local user'
+    })
+    return
+  }
+  // TODO: check domain
+  res.writeHead(200, {
+    'Content-Type': 'application/jrd+json; charset=utf-8'
+  })
+  res.end(JSON.stringify({
+    "links" : [
+      {
+        "href" : `${ORIGIN}/user/${username}`,
+        "rel" : "self",
+        "type" : "application/activity+json"
+      }
+    ],
+    "subject" : resource
+  }))
+}))
+
+app.get('/user/:username', wrap((req, res) => {
+  const username = req.params.username
+  res.writeHead(200, {
+    'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"'
+  })
+  res.end(JSON.stringify({
+    "@context": "https://www.w3.org/ns/activitystreams",
+    "id": `${ORIGIN}/user/${username}`,
+    "type": "Person",
+    "name": username,
+    "inbox": `${ORIGIN}/user/${username}/inbox`,
+    "outbox": `${ORIGIN}/user/${username}/outbox`
+  }))
 }))
 
 // Start the server
@@ -65,27 +81,27 @@ app.get('/.well-known/webfinger', wrap((req, res) => {
 const server = http.createServer(app)
 
 server.listen(PORT, ADDRESS, () => {
-    console.log(`Listening on ${ADDRESS}:${PORT}`)
+  console.log(`Listening on ${ADDRESS}:${PORT}`)
 })
 
 // Define a function for cleanup tasks
 
 const cleanup = () => {
-    server.close(() => {
-        process.exit(0)
-    })
+  server.close(() => {
+    process.exit(0)
+  })
 }
 
 // Listen for SIGINT (Ctrl+C) and SIGTERM (Termination) signals
 
 process.on('SIGINT', () => {
-    cleanup()
+  cleanup()
 })
 
 process.on('SIGTERM', () => {
-    cleanup()
+  cleanup()
 })
 
 process.on('exit', (code) => {
-    console.log(`About to exit with code: ${code}`)
+  console.log(`About to exit with code: ${code}`)
 })
