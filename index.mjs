@@ -13,7 +13,7 @@ const app = express()
 
 // Root object
 
-app.get('/', wrap((req, res) => {
+app.get('/', wrap(async (req, res) => {
   res.status(200)
   res.json({
     '@context': 'https://www.w3.org/ns/activitystreams',
@@ -25,7 +25,7 @@ app.get('/', wrap((req, res) => {
 
 // Root object
 
-app.get('/.well-known/webfinger', wrap((req, res) => {
+app.get('/.well-known/webfinger', wrap(async (req, res) => {
   const resource = req.query.resource
   if (!resource) {
     res.status(400)
@@ -61,7 +61,7 @@ app.get('/.well-known/webfinger', wrap((req, res) => {
   }))
 }))
 
-app.get('/user/:username', wrap((req, res) => {
+app.get('/user/:username', wrap(async (req, res) => {
   const username = req.params.username
   res.writeHead(200, {
     'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"'
@@ -73,6 +73,50 @@ app.get('/user/:username', wrap((req, res) => {
     "name": username,
     "inbox": `${ORIGIN}/user/${username}/inbox`,
     "outbox": `${ORIGIN}/user/${username}/outbox`
+  }))
+}))
+
+const eventToItem = (event) => {
+  return {
+    type: 'Create',
+    id: `${ORIGIN}/event/${event.id}`,
+    actor: {
+      type: 'Person',
+      id: `${ORIGIN}/user/${event.actor.login}`,
+      name: event.actor.login
+    },
+    object: {
+      type: 'Note',
+      id: `${ORIGIN}/event/${event.id}/note`,
+      content: `${event.actor.login} ${event.type} ${event.repo.name}`
+    }
+  }
+}
+
+app.get('/user/:username/outbox', wrap(async (req, res) => {
+  const username = req.params.username
+  const events = await (await fetch(`https://api.github.com/users/${username}/events/public`, {
+    headers: {
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  })).json()
+  const items = events.map(eventToItem)
+  res.writeHead(200, {
+    'Content-Type': 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"'
+  })
+  res.end(JSON.stringify({
+    "@context": "https://www.w3.org/ns/activitystreams",
+    "id": `${ORIGIN}/user/${username}/outbox`,
+    "type": "OrderedCollection",
+    "nameMap": {
+      "en": `Outbox for ${username}`
+    },
+    "first": {
+      "id": `${ORIGIN}/user/${username}/outbox/latest`,
+      "type": "OrderedCollectionPage",
+      "items": items
+    }
   }))
 }))
 

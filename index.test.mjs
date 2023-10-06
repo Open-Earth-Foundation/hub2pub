@@ -62,4 +62,17 @@ describe('hub2pub', { only: true }, () => {
     assert.equal(json.inbox, 'http://localhost:3000/user/evanp/inbox')
     assert.equal(json.outbox, 'http://localhost:3000/user/evanp/outbox')
   })
+
+  it('can get actor outbox for a Github user', { only: true }, async () => {
+    const res = await fetch('http://localhost:3000/user/evanp/outbox')
+    assert.equal(res.status, 200)
+    assert.equal(res.headers.get('content-type'), 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"')
+    const json = await res.json()
+    assert.equal(json.id, 'http://localhost:3000/user/evanp/outbox')
+    assert.equal(json.type, 'OrderedCollection')
+    assert.equal(json.nameMap.en, `Outbox for evanp`)
+    assert.ok(json.first)
+    assert.equal(json.first.id, 'http://localhost:3000/user/evanp/outbox/latest')
+    assert.ok(json.first.items)
+  })
 })
