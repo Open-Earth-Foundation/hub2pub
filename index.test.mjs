@@ -39,4 +39,14 @@ describe('hub2pub', { only: true }, () => {
         assert.equal(json.type, 'Service')
         assert.equal(json.name, 'hub2pub')
     })
+
+    it('can get Webfinger address for a GitHub user', { only: true }, async () => {
+      const res = await fetch('http://localhost:3000/.well-known/webfinger?resource=acct:evanp%40localhost:3000')
+      assert.equal(res.status, 200)
+      const json = await res.json()
+      assert.equal(json.subject, 'acct:evanp@localhost:3000')
+      assert.equal(json.links[0].rel, 'self')
+      assert.equal(json.links[0].type, 'application/activity+json')
+      assert.equal(json.links[0].href, 'http://localhost:3000/user/evanp')
+  })
 })

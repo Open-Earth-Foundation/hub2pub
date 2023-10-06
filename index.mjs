@@ -23,6 +23,43 @@ app.get('/', wrap((req, res) => {
     })
 }))
 
+// Root object
+
+app.get('/.well-known/webfinger', wrap((req, res) => {
+    const resource = req.query.resource
+    if (!resource) {
+        res.status(400)
+        res.json({
+            error: 'invalid_request',
+            error_description: 'The "resource" parameter is required'
+        })
+        return
+    }
+    const acct = resource.replace(/^acct:/, '')
+    const [username, domain] = acct.split('@')
+    if (domain !== (new URL(ORIGIN)).host) {
+        res.status(404)
+        res.json({
+            error: 'invalid_request',
+            error_description: 'The "resource" parameter must be a local user'
+        })
+        return
+    }
+    // TODO: check domain
+    res.status(200)
+    res.contentType('application/jrd+json')
+    res.json({
+        "links" : [
+            {
+               "href" : `${ORIGIN}/user/${username}`,
+               "rel" : "self",
+               "type" : "application/activity+json"
+            }
+         ],
+         "subject" : resource
+    })
+}))
+
 // Start the server
 
 const server = http.createServer(app)
